@@ -1,0 +1,919 @@
+library(tidyverse)
+library(tidyquant)
+library(recipes)
+library(tidyquant)
+library(stringr)
+library(forcats)
+library(cowplot)
+library(fs)
+library(glue)
+library(h2o)
+library(lime)
+
+# 1. LOAD DATA ----
+
+fedex_rnk                  <- "00_Data/FedEx_Standings.csv"
+driving_accuracy           <- "00_Data/Driving_Accuracy.csv"
+driving_distance           <- "00_Data/Driving_Distance.csv"
+fairway_approach_50_75     <- "00_Data/Fairway_Approach_50_75.csv"
+fairway_approach_75_100    <- "00_Data/Fairway_Approach_75_100.csv"
+fairway_approach_100_125   <- "00_Data/Fairway_Approach_100_125.csv"
+fairway_approach_125_150   <- "00_Data/Fairway_Approach_125_150.csv"
+fairway_approach_150_175   <- "00_Data/Fairway_Approach_150_175.csv"
+fairway_approach_175_200   <- "00_Data/Fairway_Approach_175_200.csv"
+fairway_approach_200_225   <- "00_Data/Fairway_Approach_200_225.csv"
+fairway_approach_225_250   <- "00_Data/Fairway_Approach_225_250.csv"
+fairway_approach_250_275   <- "00_Data/Fairway_Approach_250_275.csv"
+prox_to_hole_fringe        <- "00_Data/Prox_To_Hole_Fringe.csv"
+prox_to_hole_other         <- "00_Data/Prox_To_Hole_Other.csv"
+prox_to_hole_rough         <- "00_Data/Prox_To_Hole_Rough.csv"
+prox_to_hole_sand          <- "00_Data/Prox_To_Hole_Sand.csv"
+putts_from_3_5             <- "00_Data/Putts_From_3_5.csv"
+putts_from_5_10            <- "00_Data/Putts_From_5_10.csv"
+putts_from_10_15           <- "00_Data/Putts_From_10_15.csv"
+putts_from_15_20           <- "00_Data/Putts_From_15_20.csv"
+putts_from_20_25           <- "00_Data/Putts_From_20_25.csv"
+putts_from_25_or_more      <- "00_Data/Putts_From_25_Or_More.csv"
+rough_approach_50_75       <- "00_Data/Rough_Approach_50_75.csv"
+rough_approach_75_100      <- "00_Data/Rough_Approach_75_100.csv"
+rough_approach_100_125     <- "00_Data/Rough_Approach_100_125.csv"
+rough_approach_125_150     <- "00_Data/Rough_Approach_125_150.csv"
+rough_approach_150_175     <- "00_Data/Rough_Approach_150_175.csv"
+rough_approach_175_200     <- "00_Data/Rough_Approach_175_200.csv"
+rough_approach_200_225     <- "00_Data/Rough_Approach_200_225.csv"
+rough_approach_225_250     <- "00_Data/Rough_Approach_225_250.csv"
+rough_approach_250_275     <- "00_Data/Rough_Approach_250_275.csv"
+
+fedex_rnk                  <- read.csv((fedex_rnk), header = TRUE) %>% as_tibble()
+driving_accuracy           <- read.csv((driving_accuracy), header = TRUE) %>% as_tibble()
+driving_distance           <- read.csv((driving_distance), header = TRUE) %>% as_tibble()
+fairway_approach_50_75     <- read.csv((fairway_approach_50_75), header = TRUE) %>% as_tibble()
+fairway_approach_75_100    <- read.csv((fairway_approach_75_100), header = TRUE) %>% as_tibble()
+fairway_approach_100_125   <- read.csv((fairway_approach_100_125), header = TRUE) %>% as_tibble()
+fairway_approach_125_150   <- read.csv((fairway_approach_125_150), header = TRUE) %>% as_tibble()
+fairway_approach_150_175   <- read.csv((fairway_approach_150_175), header = TRUE) %>% as_tibble()
+fairway_approach_175_200   <- read.csv((fairway_approach_175_200), header = TRUE) %>% as_tibble()
+fairway_approach_200_225   <- read.csv((fairway_approach_200_225), header = TRUE) %>% as_tibble()
+fairway_approach_225_250   <- read.csv((fairway_approach_225_250), header = TRUE) %>% as_tibble()
+fairway_approach_250_275   <- read.csv((fairway_approach_250_275), header = TRUE) %>% as_tibble()
+prox_to_hole_fringe        <- read.csv((prox_to_hole_fringe), header = TRUE) %>% as_tibble()
+prox_to_hole_other         <- read.csv((prox_to_hole_other), header = TRUE) %>% as_tibble()
+prox_to_hole_rough         <- read.csv((prox_to_hole_rough), header = TRUE) %>% as_tibble()
+prox_to_hole_sand          <- read.csv((prox_to_hole_sand), header = TRUE) %>% as_tibble()
+putts_from_3_5             <- read.csv((putts_from_3_5), header = TRUE) %>% as_tibble()
+putts_from_5_10            <- read.csv((putts_from_5_10), header = TRUE) %>% as_tibble()
+putts_from_10_15           <- read.csv((putts_from_10_15), header = TRUE) %>% as_tibble()
+putts_from_15_20           <- read.csv((putts_from_15_20), header = TRUE) %>% as_tibble()
+putts_from_20_25           <- read.csv((putts_from_20_25), header = TRUE) %>% as_tibble()
+putts_from_25_or_more      <- read.csv((putts_from_25_or_more), header = TRUE) %>% as_tibble()
+rough_approach_50_75       <- read.csv((rough_approach_50_75), header = TRUE) %>% as_tibble()
+rough_approach_75_100      <- read.csv((rough_approach_75_100), header = TRUE) %>% as_tibble()
+rough_approach_100_125     <- read.csv((rough_approach_100_125), header = TRUE) %>% as_tibble()
+rough_approach_125_150     <- read.csv((rough_approach_125_150), header = TRUE) %>% as_tibble()
+rough_approach_150_175     <- read.csv((rough_approach_150_175), header = TRUE) %>% as_tibble()
+rough_approach_175_200     <- read.csv((rough_approach_175_200), header = TRUE) %>% as_tibble()
+rough_approach_200_225     <- read.csv((rough_approach_200_225), header = TRUE) %>% as_tibble()
+rough_approach_225_250     <- read.csv((rough_approach_225_250), header = TRUE) %>% as_tibble()
+rough_approach_250_275     <- read.csv((rough_approach_250_275), header = TRUE) %>% as_tibble()
+
+
+
+# |------------------------------------------ ----
+# 2. SELECT AND MODIFY RELEVANT COLUMNS ----
+
+fedex_rnk_tbl <- fedex_rnk %>%
+  select(RANK_THIS_WEEK, PLAYER_NAME, YEAR) %>%
+  rename(FEDEX_RANK = RANK_THIS_WEEK)
+
+driving_accuracy_tbl <- driving_accuracy %>%
+  mutate(DRIVING_ACCURACY_AVG = PERC / 100) %>%
+  rename(DRIVING_ACCURACY_RANK = RANK_THIS_WEEK) %>%
+  select(PLAYER_NAME, DRIVING_ACCURACY_RANK, YEAR, DRIVING_ACCURACY_AVG)
+
+driving_distance_tbl <- driving_distance %>%
+  select(PLAYER_NAME, RANK_THIS_WEEK, YEAR, AVG) %>%
+  rename(DRIVING_DISTANCE_RANK = RANK_THIS_WEEK) %>%
+  rename(DRIVING_DISTANCE_AVG = AVG)
+
+fairway_approach_50_75_tbl <- fairway_approach_50_75 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_50_75_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_50_75_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_50_75_RANK, FAIRWAY_APPROACH_50_75_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_75_100_tbl <- fairway_approach_75_100 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_75_100_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_75_100_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_75_100_RANK, FAIRWAY_APPROACH_75_100_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_100_125_tbl <- fairway_approach_100_125 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_100_125_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_100_125_RANK = RANK.THIS.WEEK) %>%  
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_100_125_RANK, FAIRWAY_APPROACH_100_125_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_125_150_tbl <- fairway_approach_125_150 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_125_150_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_125_150_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_125_150_RANK, FAIRWAY_APPROACH_125_150_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_150_175_tbl <- fairway_approach_150_175 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_150_175_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_150_175_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_150_175_RANK, FAIRWAY_APPROACH_150_175_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_175_200_tbl <- fairway_approach_175_200 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_175_200_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_175_200_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_175_200_RANK, FAIRWAY_APPROACH_175_200_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_200_225_tbl <- fairway_approach_200_225 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_200_225_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_200_225_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_200_225_RANK, FAIRWAY_APPROACH_200_225_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_225_250_tbl <- fairway_approach_225_250 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_225_250_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_225_250_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_225_250_RANK, FAIRWAY_APPROACH_225_250_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+fairway_approach_250_275_tbl <- fairway_approach_250_275 %>%
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(FAIRWAY_APPROACH_250_275_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  rename(FAIRWAY_APPROACH_250_275_RANK = RANK.THIS.WEEK) %>%
+  select(PLAYER.NAME, YEAR, FAIRWAY_APPROACH_250_275_RANK, FAIRWAY_APPROACH_250_275_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+prox_to_hole_fringe_tbl <- prox_to_hole_fringe %>%
+  mutate(PROX_TO_HOLE_FRINGE_AVG = TOTAL.DISTANCE..FEET. / X..OF.SHOTS) %>%
+  rename(PROX_TO_HOLE_FRINGE_RANK = RANK.THIS.WEEK) %>%  
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PROX_TO_HOLE_FRINGE_RANK, PROX_TO_HOLE_FRINGE_AVG)
+
+prox_to_hole_other_tbl <- prox_to_hole_other %>%
+  rename(PROX_TO_HOLE_OTHER_RANK = RANK.THIS.WEEK) %>%
+  rename(PROX_TO_HOLE_OTHER_AVG = AVG.DTP) %>%   
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PROX_TO_HOLE_OTHER_RANK, PROX_TO_HOLE_OTHER_AVG)
+
+prox_to_hole_rough_tbl <- prox_to_hole_rough %>%
+  rename(PROX_TO_HOLE_ROUGH_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%  
+  mutate(PROX_TO_HOLE_ROUGH_AVG = TOTAL.DISTANCE..FEET. / X..OF.SHOTS) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PROX_TO_HOLE_ROUGH_RANK, PROX_TO_HOLE_ROUGH_AVG)
+
+prox_to_hole_sand_tbl <- prox_to_hole_sand %>%
+  rename(PROX_TO_HOLE_SAND_RANK = RANK.THIS.WEEK) %>%   
+  mutate(PROX_TO_HOLE_SAND_AVG = TOTAL.DISTANCE..FEET. / X..OF.SHOTS) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PROX_TO_HOLE_SAND_RANK, PROX_TO_HOLE_SAND_AVG)
+
+putts_from_3_5_tbl <- putts_from_3_5 %>%
+  rename(PUTTS_FROM_3_5_RANK = RANK.THIS.WEEK) %>%   
+  mutate(PUTTS_FROM_3_5_AVG = X..MADE / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_3_5_RANK, PUTTS_FROM_3_5_AVG)
+
+putts_from_5_10_tbl <- putts_from_5_10 %>%
+  rename(PUTTS_FROM_5_10_RANK = RANK.THIS.WEEK) %>%   
+  mutate(PUTTS_FROM_5_10_AVG = X. / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_5_10_RANK, PUTTS_FROM_5_10_AVG)
+
+putts_from_10_15_tbl <- putts_from_10_15 %>%
+  rename(PUTTS_FROM_10_15_RANK = RANK.THIS.WEEK) %>%   
+  mutate(PUTTS_FROM_10_15_AVG = X..MADE / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_10_15_RANK, PUTTS_FROM_10_15_AVG)
+
+putts_from_15_20_tbl <- putts_from_15_20 %>%
+  rename(PUTTS_FROM_15_20_RANK = RANK.THIS.WEEK) %>%   
+  mutate(PUTTS_FROM_15_20_AVG = X..MADE / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_15_20_RANK, PUTTS_FROM_15_20_AVG)
+
+putts_from_20_25_tbl <- putts_from_20_25 %>%
+  rename(PUTTS_FROM_20_25_RANK = RANK.THIS.WEEK) %>% 
+  mutate(PUTTS_FROM_20_25_AVG = X..MADE / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_20_25_RANK, PUTTS_FROM_20_25_AVG)
+
+putts_from_25_or_more_tbl <- putts_from_25_or_more %>%
+  rename(PUTTS_FROM_25_OR_MORE_RANK = RANK.THIS.WEEK) %>% 
+  mutate(PUTTS_FROM_25_OR_MORE_AVG = X..MADE / 100) %>%
+  rename(PLAYER_NAME = PLAYER.NAME) %>%
+  select(PLAYER_NAME, YEAR, PUTTS_FROM_25_OR_MORE_RANK, PUTTS_FROM_25_OR_MORE_AVG)
+
+rough_approach_50_75_tbl <- rough_approach_50_75 %>%
+  rename(ROUGH_APPROACH_50_75_RANK = WEEK) %>%   
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_50_75_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_50_75_RANK, ROUGH_APPROACH_50_75_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_75_100_tbl <- rough_approach_75_100 %>%
+  rename(ROUGH_APPROACH_75_100_RANK = RANK.THIS.WEEK) %>% 
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_75_100_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_75_100_RANK, ROUGH_APPROACH_75_100_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_100_125_tbl <- rough_approach_100_125 %>%
+  rename(ROUGH_APPROACH_100_125_RANK = RANK.THIS.WEEK) %>%   
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_100_125_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_100_125_RANK, ROUGH_APPROACH_100_125_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_125_150_tbl <- rough_approach_125_150 %>%
+  rename(ROUGH_APPROACH_125_150_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_125_150_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_125_150_RANK, ROUGH_APPROACH_125_150_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_150_175_tbl <- rough_approach_150_175 %>%
+  rename(ROUGH_APPROACH_150_175_RANK = RANK.THIS.WEEK) %>%    
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_150_175_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_150_175_RANK, ROUGH_APPROACH_150_175_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_175_200_tbl <- rough_approach_175_200 %>%
+  rename(ROUGH_APPROACH_175_200_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_175_200_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_175_200_RANK, ROUGH_APPROACH_175_200_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_200_225_tbl <- rough_approach_200_225 %>%
+  rename(ROUGH_APPROACH_200_225_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_200_225_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_200_225_RANK, ROUGH_APPROACH_200_225_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_225_250_tbl <- rough_approach_225_250 %>%
+  rename(ROUGH_APPROACH_225_250_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_225_250_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_225_250_RANK, ROUGH_APPROACH_225_250_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+
+rough_approach_250_275_tbl <- rough_approach_250_275 %>%
+  rename(ROUGH_APPROACH_250_275_RANK = RANK.THIS.WEEK) %>%  
+  mutate(TOTAL.DISTANCE..FEET. = as.numeric(paste(TOTAL.DISTANCE..FEET.))) %>%
+  mutate(X..OF.ATTEMPTS = as.double(X..OF.ATTEMPTS)) %>%
+  mutate(ROUGH_APPROACH_250_275_AVG = TOTAL.DISTANCE..FEET. / X..OF.ATTEMPTS) %>%
+  select(PLAYER.NAME, YEAR, ROUGH_APPROACH_250_275_RANK, ROUGH_APPROACH_250_275_AVG) %>%
+  rename(PLAYER_NAME = PLAYER.NAME)
+  
+# |------------------------------------------ ----
+# 3. JOIN TABLES ----
+
+# Convert PLAYER_NAME to factor
+fedex_rnk_tbl <- fedex_rnk_tbl %>% 
+  mutate(PLAYER_NAME = as.factor(PLAYER_NAME))
+
+join_tbl_V00 <- 
+  fedex_rnk_tbl %>% 
+  inner_join(driving_accuracy_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>% 
+  inner_join(driving_distance_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_50_75_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_75_100_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_100_125_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_125_150_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_150_175_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_175_200_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_200_225_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_225_250_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(fairway_approach_250_275_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(prox_to_hole_fringe_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(prox_to_hole_other_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(prox_to_hole_rough_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(prox_to_hole_sand_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_3_5_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_5_10_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_10_15_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_15_20_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_20_25_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(putts_from_25_or_more_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_50_75_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_75_100_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_100_125_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_125_150_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_150_175_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_175_200_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_200_225_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_225_250_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR")) %>%
+  inner_join(rough_approach_250_275_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR"))
+  
+glimpse(join_tbl_V00)
+
+# Write csv file
+path_write_data_V00      <- "00_Data_Output/joined_tbl.csv"
+write.csv(join_tbl_V00, path_write_data_V00)
+
+
+# |------------------------------------------ ----
+# 4. CORRELATIONS 2014-2017 DATA ----
+join_tbl_V01 <- join_tbl_V00 %>%
+  select (FEDEX_RANK,
+          PLAYER_NAME,
+          YEAR,
+          DRIVING_ACCURACY_AVG,
+          DRIVING_DISTANCE_AVG,
+          FAIRWAY_APPROACH_50_75_AVG,
+          FAIRWAY_APPROACH_75_100_AVG,
+          FAIRWAY_APPROACH_100_125_AVG,
+          FAIRWAY_APPROACH_125_150_AVG,
+          FAIRWAY_APPROACH_150_175_AVG,
+          FAIRWAY_APPROACH_175_200_AVG,
+          FAIRWAY_APPROACH_200_225_AVG,
+          FAIRWAY_APPROACH_225_250_AVG,
+          FAIRWAY_APPROACH_250_275_AVG,
+          PROX_TO_HOLE_FRINGE_AVG,
+          PROX_TO_HOLE_OTHER_AVG,
+          PROX_TO_HOLE_ROUGH_AVG,
+          PROX_TO_HOLE_SAND_AVG,
+          PUTTS_FROM_3_5_AVG,
+          PUTTS_FROM_5_10_AVG,
+          PUTTS_FROM_10_15_AVG,
+          PUTTS_FROM_15_20_AVG,
+          PUTTS_FROM_20_25_AVG,
+          PUTTS_FROM_25_OR_MORE_AVG,
+          ROUGH_APPROACH_50_75_AVG,
+          ROUGH_APPROACH_75_100_AVG,
+          ROUGH_APPROACH_100_125_AVG,
+          ROUGH_APPROACH_125_150_AVG,
+          ROUGH_APPROACH_150_175_AVG,
+          ROUGH_APPROACH_175_200_AVG,
+          ROUGH_APPROACH_200_225_AVG,
+          ROUGH_APPROACH_225_250_AVG,
+          ROUGH_APPROACH_250_275_AVG
+  ) %>% mutate(FEDEX_RANK = case_when (
+                            substr(FEDEX_RANK, 1, 1) == "T" ~ substr(FEDEX_RANK, 2, 4),
+                            TRUE ~ substr(FEDEX_RANK, 1, 3)
+                            )
+              ) %>%
+  mutate(FEDEX_RANK = as.integer(FEDEX_RANK))
+
+join_tbl_V01 <- join_tbl_V01 %>%
+  mutate(TOP_30 = case_when 
+          (
+            FEDEX_RANK <= 30 ~ "Yes",
+            TRUE ~ "No"
+          )
+        ) %>%
+  mutate(TOP_30 = as.factor(TOP_30))
+
+# 4.1 Setup Train and Test Sets ----
+
+join_tbl_V02 <- join_tbl_V01 %>%
+  mutate(DATA_SET = case_when 
+         (
+           YEAR == "Y2018" ~ "Test",
+           TRUE ~ "Train"
+         )
+  ) %>%
+  mutate(DATA_SET = as.factor(DATA_SET))
+
+train_raw_tbl <- join_tbl_V02 %>%
+  filter(DATA_SET == "Train")
+
+test_raw_tbl <- join_tbl_V02 %>%
+  filter(DATA_SET == "Test")
+
+glimpse(train_raw_tbl)
+
+# 4.2 Initial Histograms With No Modifications ----
+
+data <- train_raw_tbl
+
+plot_hist_facet <- function(data, bins = 10, ncol = 5,
+                            fct_reorder = FALSE, fct_rev = FALSE, 
+                            fill = palette_light()[[3]], 
+                            color = "white", scale = "free") {
+  
+  data_factored <- data %>%
+    mutate_if(is.character, as.factor) %>%
+    mutate_if(is.factor, as.numeric) %>%
+    gather(key = key, value = value, factor_key = TRUE) 
+  
+  if (fct_reorder) {
+    data_factored <- data_factored %>%
+      mutate(key = as.character(key) %>% as.factor())
+  }
+  
+  if (fct_rev) {
+    data_factored <- data_factored %>%
+      mutate(key = fct_rev(key))
+  }
+  
+  g <- data_factored %>%
+    ggplot(aes(x = value, group = key)) +
+    geom_histogram(bins = bins, fill = fill, color = color) +
+    facet_wrap(~ key, ncol = ncol, scale = scale) + 
+    theme_tq()
+  
+  return(g)
+  
+}
+
+train_raw_tbl %>%
+  select(TOP_30, everything()) %>%
+  plot_hist_facet(bins = 10, ncol = 5, fct_rev = F)
+
+
+# 4.3 Zero Variance Features ----
+
+recipe_obj <- recipe(TOP_30 ~ ., data = train_raw_tbl) %>%
+  step_zv(all_predictors())
+
+recipe_obj
+
+# 4.4. Transformations ---- 
+
+skewed_feature_names <- train_raw_tbl %>%
+  select_if(is.numeric) %>%
+  map_df(skewness) %>%
+  gather(factor_key = T) %>%
+  arrange(desc(value)) %>%
+  filter(value >= 0.5) %>%
+  pull(key) %>%
+  as.character()
+
+train_raw_tbl %>%
+  select(skewed_feature_names) %>%
+  plot_hist_facet()
+
+#!skewed_feature_names %in% c("JobLevel", "StockOptionLevel")
+
+skewed_feature_names <- train_raw_tbl %>%
+  select_if(is.numeric) %>%
+  map_df(skewness) %>%
+  gather(factor_key = T) %>%
+  arrange(desc(value)) %>%
+  filter(value >= 0.5) %>%
+  pull(key) %>%
+  as.character()
+
+skewed_feature_names
+
+#factor_names <- c("JobLevel", "StockOptionLevel")
+
+#factor_names
+
+
+recipe_obj <- recipe(TOP_30 ~ ., data = train_raw_tbl) %>%
+  step_zv(all_predictors()) %>%
+  step_YeoJohnson(skewed_feature_names)
+  #step_num2factor(factor_names)
+
+recipe_obj %>% 
+  prep() %>% 
+  bake(train_raw_tbl) %>%
+  select(skewed_feature_names) %>%
+  plot_hist_facet()
+
+# 4.5. Center/Scaling -----
+
+train_raw_tbl %>%
+  select_if(is.numeric) %>%
+  plot_hist_facet()
+
+recipe_obj <- recipe(TOP_30 ~ ., data = train_raw_tbl) %>%
+  step_zv(all_predictors()) %>%
+  step_YeoJohnson(skewed_feature_names) %>%
+  #step_num2factor(factor_names) %>%
+  step_center(all_numeric()) %>%
+  step_scale(all_numeric())
+
+prepared_recipe <- recipe_obj %>% prep()
+
+prepared_recipe %>%
+  bake(new_data = train_raw_tbl) %>%
+  select_if(is.numeric) %>%
+  plot_hist_facet()
+
+# 4.6 Final Recipe -----
+
+recipe_obj <- recipe(TOP_30 ~ ., data = train_raw_tbl) %>%
+  step_zv(all_predictors()) %>%
+  step_YeoJohnson(skewed_feature_names) %>%
+  #step_num2factor(factor_names) %>%
+  step_center(all_numeric()) %>%
+  step_scale(all_numeric()) %>%
+  step_dummy(all_nominal()) %>%
+  prep()
+
+recipe_obj
+
+train_tbl <- bake(recipe_obj, new_data = train_raw_tbl)
+
+test_tbl <- bake(recipe_obj, new_data = test_raw_tbl)
+
+# 4.7 Correlation Analysis ----
+
+data         <- train_tbl
+feature_expr <- quo(TOP_30_Yes)
+
+get_cor <- function(data, target, use = "pairwise.complete.obs",
+                    fct_reorder = FALSE, fct_rev = FALSE) {
+  
+  feature_expr <- enquo(target)
+  feature_name <- quo_name(feature_expr)
+  
+  data_cor <- data %>%
+    mutate_if(is.character, as.factor) %>%
+    mutate_if(is.factor, as.numeric) %>%
+    cor(use = use) %>%
+    as.tibble() %>%
+    mutate(feature = names(.)) %>%
+    select(feature, !! feature_expr) %>%
+    filter(!(feature == feature_name)) %>%
+    mutate_if(is.character, as_factor)
+  
+  if (fct_reorder) {
+    data_cor <- data_cor %>% 
+      mutate(feature = fct_reorder(feature, !! feature_expr)) %>%
+      arrange(feature)
+  }
+  
+  if (fct_rev) {
+    data_cor <- data_cor %>% 
+      mutate(feature = fct_rev(feature)) %>%
+      arrange(feature)
+  }
+  
+  return(data_cor)
+  
+}
+
+train_tbl %>%
+  get_cor(TOP_30_Yes, fct_reorder = T, fct_rev = T)
+
+
+data         <- train_tbl
+feature_expr <- quo(TOP_30_Yes)
+
+plot_cor <- function(data, target, fct_reorder = FALSE, fct_rev = FALSE, 
+                     include_lbl = TRUE, lbl_precision = 2, lbl_position = "outward",
+                     size = 2, line_size = 1, vert_size = 1, 
+                     color_pos = palette_light()[[1]], 
+                     color_neg = palette_light()[[2]]) {
+  
+  feature_expr <- enquo(target)
+  feature_name <- quo_name(feature_expr)
+  
+  data_cor <- data %>%
+    get_cor(!! feature_expr, fct_reorder = fct_reorder, fct_rev = fct_rev) %>%
+    mutate(feature_name_text = round(!! feature_expr, lbl_precision)) %>%
+    mutate(Correlation = case_when(
+      (!! feature_expr) >= 0 ~ "Positive",
+      TRUE                   ~ "Negative") %>% as.factor())
+  
+  g <- data_cor %>%
+    ggplot(aes_string(x = feature_name, y = "feature", group = "feature")) +
+    geom_point(aes(color = Correlation), size = size) +
+    geom_segment(aes(xend = 0, yend = feature, color = Correlation), size = line_size) +
+    geom_vline(xintercept = 0, color = palette_light()[[1]], size = vert_size) +
+    expand_limits(x = c(-1, 1)) +
+    theme_tq() +
+    scale_color_manual(values = c(color_neg, color_pos)) 
+  
+  if (include_lbl) g <- g + geom_label(aes(label = feature_name_text), hjust = lbl_position)
+  
+  return(g)
+  
+}
+
+# 4.8 Correlation Evaluation ----
+
+
+# Driving Stats
+driving_stat_corr <- train_tbl %>%
+  select(TOP_30_Yes, contains("DRIVING")) %>%
+  plot_cor(target = TOP_30_Yes, fct_reorder = T, fct_rev = F)
+
+driving_stat_corr_tbl <- driving_stat_corr[[1]]
+glimpse(driving_stat_corr_tbl)
+
+# Fairway & Rough Approach Stats
+fairway_approach_stat_corr <- train_tbl %>%
+  select(TOP_30_Yes, contains("FAIRWAY"), contains("ROUGH_APPROACH")) %>%
+  plot_cor(target = TOP_30_Yes, fct_reorder = T, fct_rev = F)
+
+fairway_approach_stat_corr_tbl <- fairway_approach_stat_corr[[1]]
+glimpse(fairway_approach_stat_corr_tbl)
+
+# Scramble Stats
+scramble_stats_corr <- train_tbl %>%
+  select(TOP_30_Yes, contains("PROX_TO_HOLE")) %>%
+  plot_cor(target = TOP_30_Yes, fct_reorder = T, fct_rev = F)
+
+scramble_stats_corr_tbl <- scramble_stats_corr[[1]]
+glimpse(scramble_stats_corr_tbl)
+
+# Putt Stats & Other
+putt_and_other_stats <- train_tbl %>%
+  select(TOP_30_Yes, contains("PUTTS"), contains("REVERSE_BOUNCE")) %>%
+  plot_cor(target = TOP_30_Yes, fct_reorder = T, fct_rev = F)
+
+putt_and_other_stats_tbl <- putt_and_other_stats[[1]]
+glimpse(putt_and_other_stats_tbl)
+
+final_corr_tbl <- dplyr::bind_rows(driving_stat_corr_tbl,
+                            fairway_approach_stat_corr_tbl,
+                            scramble_stats_corr_tbl,
+                            putt_and_other_stats_tbl)   
+glimpse(final_corr_tbl)
+
+# Write csv file
+path_write_data_V01      <- "00_Data_Output/final_corr_tbl.csv"
+write.csv(final_corr_tbl, path_write_data_V01)
+
+
+# |------------------------------------------ ----
+#5. H2O MODELING ----
+
+# 5.1 ML Preprocessing ---- 
+
+train_ML_tbl <- train_raw_tbl %>%
+  select(-FEDEX_RANK, -PLAYER_NAME, -YEAR, -DATA_SET)
+
+test_ML_tbl <- test_raw_tbl %>%
+  select(-FEDEX_RANK, -PLAYER_NAME, -YEAR, -DATA_SET)
+
+recipe_obj_ML <- recipe(TOP_30 ~ ., data = train_ML_tbl) %>%
+  step_zv(all_predictors()) %>%
+  #step_num2factor(JobLevel, StockOptionLevel) %>%
+  prep()
+   
+h2o.init()
+
+split_h2o <- h2o.splitFrame(as.h2o(train_ML_tbl), ratios = c(0.85), seed = 1234)
+
+train_h2o <- split_h2o[[1]]
+valid_h2o <- split_h2o[[2]]
+test_h2o  <- as.h2o(test_ML_tbl)            
+
+y <- "TOP_30"
+x <- setdiff(names(train_h2o), y)          
+
+glimpse(train_h2o)
+
+#Commented out since this was already ran
+#automl_models_h2o <- h2o.automl(
+#  x = x,
+#  y = y,
+#  training_frame = train_h2o,
+#  validation_frame = valid_h2o,
+#  leaderboard_frame = test_h2o,
+#  max_runtime_secs = 200,
+#  nfolds = 5
+#)
+
+#(automl_models_h2o_leaderboard_tbl <- automl_models_h2o@leaderboard %>%
+#  as.tibble())
+
+#path_write_data_V03      <- "00_Data_Output/model_comparisons.csv"
+#write.csv(automl_models_h2o_leaderboard_tbl, path_write_data_V03)
+
+#automl_models_h2o@leader
+
+# 5.2 Saving & Loading ----
+
+# Commented out since the models were already saved
+#h2o.getModel("StackedEnsemble_AllModels_0_AutoML_20190110_041613") %>%
+#  h2o.saveModel(path = "02_Modeling/h2o_models/")
+
+#h2o.getModel("StackedEnsemble_BestOfFamily_0_AutoML_20190110_041613") %>%
+#  h2o.saveModel(path = "02_Modeling/h2o_models/")
+
+#h2o.getModel("GBM_grid_0_AutoML_20190110_041613_model_11") %>%
+#  h2o.saveModel(path = "02_Modeling/h2o_models/")
+
+#h2o.getModel("GLM_grid_0_AutoML_20190110_041613_model_0") %>%
+#  h2o.saveModel(path = "02_Modeling/h2o_models/")
+
+#stackedensemble_all_models_h2o   <- h2o.loadModel("02_Modeling/h2o_models/StackedEnsemble_AllModels_0_AutoML_20190110_041613")
+#stackedensemble_best_of_fam_h2o  <- h2o.loadModel("02_Modeling/h2o_models/StackedEnsemble_BestOfFamily_0_AutoML_20190110_041613")
+#gbm_h2o                          <- h2o.loadModel("02_Modeling/h2o_models/GBM_grid_0_AutoML_20190110_041613_model_11")
+#glm_h2o                   <- h2o.loadModel("02_Modeling/h2o_models/GLM_grid_0_AutoML_20190110_041613_model_0")
+
+# 5.3 Making Predictions ----
+
+stackedensemble_all_models_h2o <- h2o.loadModel("02_Modeling/h2o_models/StackedEnsemble_AllModels_0_AutoML_20190110_041613")
+
+stackedensemble_all_models_h2o
+
+predictions <- h2o.predict(stackedensemble_all_models_h2o, newdata = as.h2o(test_ML_tbl))
+
+predictions_tbl <- predictions %>% as.tibble()
+glimpse(predictions_tbl)
+
+final_pred_tbl <- dplyr::bind_cols(predictions_tbl,
+                                   test_raw_tbl)  
+
+glimpse(final_pred_tbl)
+
+#Rank the probabilities
+final_pred_tbl <- final_pred_tbl %>%
+  mutate(prob_rank = dense_rank(desc(Yes, ties.method = 'first')))
+
+glimpse(final_pred_tbl)
+
+# Write csv file
+path_write_data_V02      <- "00_Data_Output/final_pred_tbl.csv"
+write.csv(final_pred_tbl, path_write_data_V02)
+
+# |------------------------------------------ ----
+# 6. LIME EXPLANATION ---- 
+# 6.1 Single Explanation ----
+
+glimpse(train_ML_tbl)
+glimpse(test_ML_tbl)
+
+explainer <- train_ML_tbl %>%
+  select(-TOP_30) %>%
+  lime(
+    model           = stackedensemble_all_models_h2o,
+    bin_continuous  = TRUE,
+    n_bins          = 4,
+    quantile_bins   = TRUE
+  )
+
+explainer
+
+explanation <- test_ML_tbl %>%
+  slice(2) %>%
+  select(-TOP_30) %>%
+  lime::explain(
+    explainer = explainer,
+    n_labels   = 1,
+    n_features = 30,
+    n_permutations = 10000,
+    kernel_width   = 1.0
+  )
+
+explanation %>%
+  as.tibble() %>%
+  select(feature:prediction) 
+
+plot_features(explanation = explanation, ncol = 1)
+
+
+# 6.2 Multiple Explanation Example ----
+explanation <- test_ML_tbl %>%
+  slice(1:4) %>%
+  select(-TOP_30) %>%
+  lime::explain(
+    explainer = explainer,
+    n_labels   = 1,
+    n_features = 30,
+    n_permutations = 10000,
+    kernel_width   = 1
+  )
+
+explanation %>%
+  as.tibble()
+
+
+plot_features(explanation, ncol = 4)
+
+plot_explanations(explanation)
+
+
+# 6.3 Multiple Explanation Final Tibble ----
+explanation <- test_ML_tbl %>%
+  select(-TOP_30) %>%
+  lime::explain(
+    explainer = explainer,
+    n_labels   = 1,
+    n_features = 30,
+    n_permutations = 10000,
+    kernel_width   = 1
+  )
+
+explanation %>%
+  as.tibble()
+
+# |------------------------------------------ ----
+# 7. COMBINE PREDICTIONS WITH EXPLANATIONS ----
+
+explanation <- explanation %>% 
+  mutate(case=as.integer(case)) %>%
+  select(case, label, model_r2, feature, feature_value, feature_desc, feature_weight)
+
+glimpse(explanation)
+
+# Add row number to tibble.  This will be joined to the case number in the
+# explanation tibble
+final_pred_2_tbl <- tibble::rowid_to_column(final_pred_tbl, "case")
+glimpse(final_pred_2_tbl)
+
+final_pred_2_tbl <- final_pred_2_tbl %>%
+  select(case, predict, No, Yes, FEDEX_RANK, PLAYER_NAME, YEAR, DRIVING_ACCURACY_AVG, DRIVING_DISTANCE_AVG,
+         FAIRWAY_APPROACH_50_75_AVG, FAIRWAY_APPROACH_75_100_AVG, FAIRWAY_APPROACH_100_125_AVG,
+         FAIRWAY_APPROACH_125_150_AVG, FAIRWAY_APPROACH_150_175_AVG, FAIRWAY_APPROACH_175_200_AVG, FAIRWAY_APPROACH_200_225_AVG,
+         FAIRWAY_APPROACH_225_250_AVG, FAIRWAY_APPROACH_250_275_AVG, PROX_TO_HOLE_FRINGE_AVG,
+         PROX_TO_HOLE_OTHER_AVG, PROX_TO_HOLE_ROUGH_AVG, PROX_TO_HOLE_SAND_AVG, PUTTS_FROM_3_5_AVG,
+         PUTTS_FROM_5_10_AVG, PUTTS_FROM_10_15_AVG, PUTTS_FROM_15_20_AVG, PUTTS_FROM_20_25_AVG, PUTTS_FROM_25_OR_MORE_AVG,
+         ROUGH_APPROACH_50_75_AVG, ROUGH_APPROACH_75_100_AVG, ROUGH_APPROACH_100_125_AVG,
+         ROUGH_APPROACH_125_150_AVG, ROUGH_APPROACH_150_175_AVG, ROUGH_APPROACH_175_200_AVG,
+         ROUGH_APPROACH_200_225_AVG, ROUGH_APPROACH_225_250_AVG, ROUGH_APPROACH_250_275_AVG,
+         TOP_30, DATA_SET
+  )
+
+glimpse(final_pred_2_tbl)
+
+# Transpose final_pred_2_tbl above to make it longer
+final_pred_3_tbl <- gather(final_pred_2_tbl, "variable_name", "measures", 8:37)
+glimpse(final_pred_3_tbl)
+
+join_tbl_V01 <- join_tbl_V00 %>%
+  select(PLAYER_NAME, YEAR, 
+         DRIVING_ACCURACY_AVG, DRIVING_DISTANCE_AVG, FAIRWAY_APPROACH_50_75_AVG, 
+         FAIRWAY_APPROACH_75_100_AVG, FAIRWAY_APPROACH_100_125_AVG, FAIRWAY_APPROACH_125_150_AVG, 
+         FAIRWAY_APPROACH_150_175_AVG, FAIRWAY_APPROACH_175_200_AVG, FAIRWAY_APPROACH_200_225_AVG, 
+         FAIRWAY_APPROACH_225_250_AVG, FAIRWAY_APPROACH_250_275_AVG, PROX_TO_HOLE_FRINGE_AVG, 
+         PROX_TO_HOLE_OTHER_AVG, PROX_TO_HOLE_ROUGH_AVG, PROX_TO_HOLE_SAND_AVG, PUTTS_FROM_3_5_AVG, 
+         PUTTS_FROM_5_10_AVG, PUTTS_FROM_10_15_AVG, PUTTS_FROM_15_20_AVG, PUTTS_FROM_20_25_AVG, 
+         PUTTS_FROM_25_OR_MORE_AVG, ROUGH_APPROACH_50_75_AVG, ROUGH_APPROACH_75_100_AVG, 
+         ROUGH_APPROACH_100_125_AVG, ROUGH_APPROACH_125_150_AVG, ROUGH_APPROACH_150_175_AVG, 
+         ROUGH_APPROACH_175_200_AVG, ROUGH_APPROACH_200_225_AVG, ROUGH_APPROACH_225_250_AVG, 
+         ROUGH_APPROACH_250_275_AVG)
+glimpse(join_tbl_V01)
+
+# Transpose join_tbl_V01 above to make it longer
+join_tbl_transpose_V01 <- gather(join_tbl_V01, "avg_name", "avg_measure", 3:32)
+glimpse(join_tbl_transpose_V01)
+
+
+join_tbl_V02 <- join_tbl_V00 %>%
+  mutate_at(vars(ends_with("RANK")),funs(as.character)) %>%
+  select(PLAYER_NAME, YEAR, 
+         DRIVING_ACCURACY_RANK, DRIVING_DISTANCE_RANK, FAIRWAY_APPROACH_50_75_RANK, 
+         FAIRWAY_APPROACH_75_100_RANK, FAIRWAY_APPROACH_100_125_RANK, FAIRWAY_APPROACH_125_150_RANK, 
+         FAIRWAY_APPROACH_150_175_RANK, FAIRWAY_APPROACH_175_200_RANK, FAIRWAY_APPROACH_200_225_RANK, 
+         FAIRWAY_APPROACH_225_250_RANK, FAIRWAY_APPROACH_250_275_RANK, PROX_TO_HOLE_FRINGE_RANK, 
+         PROX_TO_HOLE_OTHER_RANK, PROX_TO_HOLE_ROUGH_RANK, PROX_TO_HOLE_SAND_RANK, PUTTS_FROM_3_5_RANK, 
+         PUTTS_FROM_5_10_RANK, PUTTS_FROM_10_15_RANK, PUTTS_FROM_15_20_RANK, PUTTS_FROM_20_25_RANK, 
+         PUTTS_FROM_25_OR_MORE_RANK, ROUGH_APPROACH_50_75_RANK, ROUGH_APPROACH_75_100_RANK, 
+         ROUGH_APPROACH_100_125_RANK, ROUGH_APPROACH_125_150_RANK, ROUGH_APPROACH_150_175_RANK, 
+         ROUGH_APPROACH_175_200_RANK, ROUGH_APPROACH_200_225_RANK, ROUGH_APPROACH_225_250_RANK, 
+         ROUGH_APPROACH_250_275_RANK)
+
+glimpse(join_tbl_V02)
+
+# Transpose join_tbl_V02 above to make it longer
+join_tbl_transpose_V02 <- gather(join_tbl_V02, "rank_name", "rank_measure", 3:32)
+glimpse(join_tbl_transpose_V02)
+glimpse(join_tbl_transpose_V01)
+
+join_bind_tbl <- bind_cols(join_tbl_transpose_V01, join_tbl_transpose_V02)
+glimpse(join_bind_tbl)
+
+explain_with_pred_tbl <- 
+  explanation %>% 
+  left_join(final_pred_3_tbl, by = c("case" = "case", "feature" = "variable_name")) %>%
+  left_join(join_bind_tbl, by = c("PLAYER_NAME" = "PLAYER_NAME", "YEAR" = "YEAR", "feature" = "avg_name"))
+
+glimpse(explain_with_pred_tbl)
+
+# Write csv file
+path_write_data_V03      <- "00_Data_Output/explain_with_pred_tbl.csv"
+write.csv(explain_with_pred_tbl, path_write_data_V03)
